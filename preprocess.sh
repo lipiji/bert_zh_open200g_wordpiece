@@ -1,4 +1,4 @@
 python preprocess.py \
-    --src_file /dockerdata/pjli/data/language_model/bert_newdata/data.txt \
+    --src_file /mnt/data/pjli/data/WuDaoCorpus2.0_base_200G/data.txt \
     --tgt_file ./data/train.txt \
-    --nprocessors 64
+    --nprocessors 40

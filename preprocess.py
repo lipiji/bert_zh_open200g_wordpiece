@@ -31,15 +31,20 @@ def work_news_char(line):
         return [[]]
     try:
         line = json.loads(line)
-        if "text" in line:
-            line = line["text"].strip()
+        title = ""
+        if "title" in line:
+            title = line["title"].strip()
+        if "content" in line:
+            line = line["content"].strip()
+            if title:
+                line = title + "。" + line
             if not line:
                 return [[]]
         else:
             return [[]]
     except:
         return [[]]
-    line = HanziConv.toSimplified(line)
+    #line = HanziConv.toSimplified(line)
     char_seq = tokenizer.tokenize(line)
     res = []
     sent = []

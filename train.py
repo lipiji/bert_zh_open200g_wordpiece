@@ -12,8 +12,6 @@ from adam import AdamWeightDecayOptimizer
 import argparse, os
 import random
 
-from jizhi_utils import *
-
 def parse_config():
     parser = argparse.ArgumentParser()
     parser.add_argument('--embed_dim', type=int)
@@ -28,6 +26,8 @@ def parse_config():
     parser.add_argument('--batch_size', type=int)
     parser.add_argument('--warmup_steps', type=int)
     parser.add_argument('--lr', type=float)
+    parser.add_argument('--accumulation_steps', type=int)
+
     parser.add_argument('--max_len', type=int)
     parser.add_argument('--print_every', type=int)
     parser.add_argument('--save_every', type=int)
@@ -105,26 +105,29 @@ def run(args, local_rank):
             msk = msk.cuda(local_rank)
             nxt_snt_flag = nxt_snt_flag.cuda(local_rank)
 
-            optimizer.zero_grad()
             res, loss, acc, ntokens, acc_nxt, npairs = model(truth, inp, seg, msk, nxt_snt_flag)
-            loss_acm += loss.item()
+            loss = loss/args.accumulation_steps
+            
+            loss_acm += loss.item() * args.accumulation_steps 
             acc_acm += acc
             ntokens_acm += ntokens
             acc_nxt_acm += acc_nxt
             npairs_acm += npairs
-            if args.fp16:
-                optimizer.backward(loss)
-            else:
-                loss.backward()
-            if args.world_size > 1:
-                average_gradients(model)
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-            optimizer.step()
+            
+            loss.backward()
+           
+            if batch_acm % args.accumulation_steps == 0:
+                if args.world_size > 1:
+                    average_gradients(model)
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                optimizer.step()
+                optimizer.zero_grad()
+
             if (args.world_size==1 or dist.get_rank() ==0) and batch_acm%args.print_every == -1%args.print_every:
-                print ('batch_acm %d, loss %.3f, acc %.3f, nxt_acc %.3f'%(batch_acm, loss_acm/args.print_every, acc_acm/ntokens_acm, acc_nxt_acm/npairs_acm), flush=True)
+                print ('batch_acm %d, loss %.4f, acc %.4f, nxt_acc %.4f, lr %.4f'%(batch_acm, loss_acm/args.print_every, acc_acm/ntokens_acm, acc_nxt_acm/npairs_acm, local_lr), flush=True)
                 
-                report_progress({"type": "train","step":batch_acm, "loss":loss_acm/args.print_every, "acc":acc_acm/ntokens_acm, "acc_nsp":acc_nxt_acm/npairs_acm,\
-                        "lr":local_lr})
+                #report_progress({"type": "train","step":batch_acm, "loss":loss_acm/args.print_every, "acc":acc_acm/ntokens_acm, "acc_nsp":acc_nxt_acm/npairs_acm,\
+                #        "lr":local_lr})
 
                 acc_acm, ntokens_acm, acc_nxt_acm, npairs_acm, loss_acm = 0., 0., 0., 0., 0.
             if (args.world_size==1 or dist.get_rank() ==0) and batch_acm%args.save_every == -1%args.save_every:
