@@ -34,12 +34,13 @@ def parse_config():
 
 def init_bert_model(args, device, bert_vocab):
     bert_ckpt= torch.load(args.bert_path, map_location='cpu')
+    bert_name = args.bert_path.split("/")[-1]
     bert_args = bert_ckpt['args']
     bert_vocab = Vocab(bert_vocab, min_occur_cnt=bert_args.min_occur_cnt, specials=[CLS, SEP, MASK])
     bert_model = BERTLM(device, bert_vocab, bert_args.embed_dim, bert_args.ff_embed_dim, bert_args.num_heads, bert_args.dropout, bert_args.layers, bert_args.approx)
     bert_model.load_state_dict(bert_ckpt['model'])
     bert_model = bert_model.cuda(device)
-    return bert_model, bert_vocab, bert_args
+    return bert_model, bert_vocab, bert_args, bert_name
 
 def ListsToTensor(xs, vocab):
 
@@ -99,7 +100,7 @@ if __name__ == "__main__":
     # myModel construction
     print ('Initializing model...')
     bert_vocab = args.bert_vocab
-    bert_model, bert_vocab, bert_args = init_bert_model(args, args.gpu_id, bert_vocab)
+    bert_model, bert_vocab, bert_args, bert_name = init_bert_model(args, args.gpu_id, bert_vocab)
     batch_size = args.batch_size
     number_class = args.number_class
     embedding_size = bert_args.embed_dim
@@ -181,7 +182,7 @@ if __name__ == "__main__":
                 torch.save({'args':args, 'model':model.state_dict(), 
                         'bert_args': bert_args, 
                         'bert_vocab':bert_vocab
-                        }, directory + '/epoch_%d_dev_acc_%.3f'%(epoch + 1, dev_acc))
+                        }, directory + '/epoch_%d_dev_acc_%.4f_%s'%(epoch + 1, dev_acc, bert_name))
                 max_dev_acc = dev_acc
             print ('At epoch %d dev accuracy is %f' % (epoch, dev_acc * 100))
 
