@@ -2,7 +2,7 @@ data_path=./data
 ckpt_path=./ckpt/
 mkdir -p $ckpt_path
 
-CUDA_VISIBLE_DEVICES=0,1 \
+CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 \
 python -u train.py --embed_dim 768 \
                       --ff_embed_dim 3072 \
                       --num_heads 12 \
@@ -16,8 +16,8 @@ python -u train.py --embed_dim 768 \
                       --lr 1e-4 \
                       --accumulation_steps 4 \
                       --max_len 128 \
-                      --world_size 2 \
-                      --gpus 2 \
+                      --world_size 8 \
+                      --gpus 8 \
                       --MASTER_ADDR localhost \
                       --MASTER_PORT 29556 \
                       --start_rank 0 \
