@@ -1,5 +1,6 @@
 *.pyc
 *.log
+/ckpt
 /data*/*
 /model*/*
 /sequence_*/*

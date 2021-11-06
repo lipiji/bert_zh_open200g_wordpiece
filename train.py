@@ -11,6 +11,10 @@ from adam import AdamWeightDecayOptimizer
 
 import argparse, os
 import random
+import time
+
+mstime = lambda: int(round(time.time() * 1000)) 
+
 
 def parse_config():
     parser = argparse.ArgumentParser()
@@ -93,6 +97,7 @@ def run(args, local_rank):
     batch_acm = 0 #2359999
     acc_acm, ntokens_acm, acc_nxt_acm, npairs_acm, loss_acm = 0., 0., 0., 0., 0.
     local_lr = args.lr
+    t_start = mstime()
     while True:
         model.train()
         for truth, inp, seg, msk, nxt_snt_flag in train_data:
@@ -124,8 +129,10 @@ def run(args, local_rank):
                 optimizer.zero_grad()
 
             if (args.world_size==1 or dist.get_rank() ==0) and batch_acm%args.print_every == -1%args.print_every:
-                print ('batch_acm %d, loss %.4f, acc %.4f, nxt_acc %.4f, lr %.6f'%(batch_acm, loss_acm/args.print_every, acc_acm/ntokens_acm, acc_nxt_acm/npairs_acm, local_lr), flush=True)
-                
+                t_end = mstime()
+                print ('batch_acm %d, loss %.4f, acc %.4f, nxt_acc %.4f, lr %.4f, time %d'%(batch_acm, loss_acm/args.print_every, \
+                        acc_acm/ntokens_acm, acc_nxt_acm/npairs_acm, local_lr, t_end-t_start), flush=True)
+                t_start = mstime() 
                 #report_progress({"type": "train","step":batch_acm, "loss":loss_acm/args.print_every, "acc":acc_acm/ntokens_acm, "acc_nsp":acc_nxt_acm/npairs_acm,\
                 #        "lr":local_lr})
 
