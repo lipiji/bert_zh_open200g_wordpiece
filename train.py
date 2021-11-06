@@ -90,7 +90,7 @@ def run(args, local_rank):
         optimizer.load_state_dict(ckpt['optimizer'])
 
     train_data = DataLoader(vocab, args.train_data + "0" + str(local_rank), args.batch_size, args.max_len)
-    batch_acm = 0
+    batch_acm = 0 #2359999
     acc_acm, ntokens_acm, acc_nxt_acm, npairs_acm, loss_acm = 0., 0., 0., 0., 0.
     local_lr = args.lr
     while True:
@@ -124,7 +124,7 @@ def run(args, local_rank):
                 optimizer.zero_grad()
 
             if (args.world_size==1 or dist.get_rank() ==0) and batch_acm%args.print_every == -1%args.print_every:
-                print ('batch_acm %d, loss %.4f, acc %.4f, nxt_acc %.4f, lr %.4f'%(batch_acm, loss_acm/args.print_every, acc_acm/ntokens_acm, acc_nxt_acm/npairs_acm, local_lr), flush=True)
+                print ('batch_acm %d, loss %.4f, acc %.4f, nxt_acc %.4f, lr %.6f'%(batch_acm, loss_acm/args.print_every, acc_acm/ntokens_acm, acc_nxt_acm/npairs_acm, local_lr), flush=True)
                 
                 #report_progress({"type": "train","step":batch_acm, "loss":loss_acm/args.print_every, "acc":acc_acm/ntokens_acm, "acc_nsp":acc_nxt_acm/npairs_acm,\
                 #        "lr":local_lr})
